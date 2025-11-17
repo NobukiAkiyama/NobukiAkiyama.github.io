@@ -1,0 +1,445 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+  background-color: #050505;
+  color: #e9ecf1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #050505;
+  padding-top: clamp(1rem, 4vh, 2.4rem);
+}
+
+.app__main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 22rem);
+  gap: 1.5rem;
+  padding: 1.5rem 1.5rem 6rem;
+  width: min(100%, 1080px);
+  margin: 0 auto;
+}
+
+.cards {
+  position: relative;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(20, 20, 20, 0.85);
+  padding: 1.25rem;
+  overflow: hidden;
+}
+
+.cards__empty {
+  margin: 0;
+  padding: 3rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  color: rgba(255, 255, 255, 0.42);
+  text-align: center;
+}
+
+.cards__placeholder {
+  width: 7rem;
+  height: 4.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  transform: rotate(-12deg);
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+}
+
+.cards__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card {
+  --card-accent: rgba(82, 171, 255, 0.75);
+  --card-glow: rgba(82, 171, 255, 0.2);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border-radius: 0.9rem;
+  background: rgba(35, 35, 35, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.card--active {
+  border-color: var(--card-accent, rgba(82, 171, 255, 0.75));
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 18px var(--card-glow, rgba(82, 171, 255, 0.2));
+  background: rgba(40, 40, 40, 0.96);
+  transform: translateY(-2px);
+}
+
+.card--active .card__value,
+.card--active h3 {
+  color: var(--card-accent, rgba(82, 171, 255, 0.85));
+}
+
+.card__select {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.card__title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.card__title-row h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.card__value {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.card__progress {
+  width: 100%;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.card__progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #3f8bff, #12d8fa);
+  width: 0;
+  transition: width 0.25s ease;
+}
+
+.card__delete {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.card__delete:hover,
+.card__delete:focus-visible {
+  background: rgba(255, 71, 87, 0.65);
+}
+
+.cards__empty[hidden],
+[data-card-list]:empty + [data-empty-state] {
+  display: none;
+}
+
+.cards__list:empty + [data-empty-state] {
+  display: flex;
+}
+
+
+.calculator {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(15, 15, 15, 0.88);
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.calculator--active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.calculator__header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.calculator__status {
+  margin: 0.35rem 0 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.85rem;
+}
+
+.calculator__display {
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: 0.85rem;
+  padding: 1rem;
+  font-size: 1.8rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+
+.calculator__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.calculator__grid button {
+  border: none;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  background: rgba(40, 40, 40, 0.85);
+  color: #eef2f9;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s ease;
+  aspect-ratio: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calculator__grid button:active {
+  transform: scale(0.98);
+}
+
+.calculator__grid button:hover,
+.calculator__grid button:focus-visible {
+  box-shadow: 0 0 0 2px rgba(82, 171, 255, 0.55);
+}
+
+
+.calculator__grid button[data-action="clear"],
+.calculator__grid button[data-action="undo"] {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.calculator__grid button[data-operator] {
+  background: rgba(82, 171, 255, 0.25);
+  color: #d8ecff;
+}
+
+.calculator__grid button[data-action="equals"] {
+  background: linear-gradient(135deg, #ff8a00, #ffaf3f);
+  color: #181818;
+  box-shadow: 0 0.5rem 1.6rem rgba(255, 140, 0, 0.4);
+}
+
+.calculator__grid button:hover,
+.calculator__grid button:focus-visible {
+  box-shadow: 0 0 0 2px rgba(82, 171, 255, 0.55);
+}
+
+.add-button {
+  position: fixed;
+  bottom: clamp(1.2rem, 4vw, 1.75rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(3.4rem, 14vw, 4.2rem);
+  height: clamp(3.4rem, 14vw, 4.2rem);
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(145deg, #257cff, #45a1ff);
+  color: #fff;
+  font-size: clamp(1.7rem, 6vw, 2rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1.2rem 2.5rem rgba(37, 124, 255, 0.35);
+  cursor: pointer;
+  z-index: 5;
+}
+
+.add-button span {
+  transform: translateY(-2px);
+}
+
+.card-modal {
+  border: none;
+  border-radius: 1rem;
+  padding: 0;
+  background: rgba(25, 25, 25, 0.95);
+  color: inherit;
+  width: min(92vw, 26rem);
+  box-shadow: 0 2rem 3.5rem rgba(0, 0, 0, 0.55);
+}
+
+.card-modal::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.5rem 1.75rem 1.75rem;
+}
+
+.card-form header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.card-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.card-form input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.65rem;
+  padding: 0.75rem;
+  color: inherit;
+  font-size: 1rem;
+}
+
+.card-form footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.card-form button {
+  border: none;
+  border-radius: 0.65rem;
+  padding: 0.75rem 1.2rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.card-form [data-close-modal] {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.card-form [type="submit"] {
+  background: linear-gradient(145deg, #257cff, #45a1ff);
+  color: #fff;
+}
+
+@media (max-width: 960px) {
+  .app__main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 1.5rem;
+  }
+
+  .calculator {
+    position: static;
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .app__main {
+    padding: 1rem 1rem 6.5rem;
+  }
+
+  .cards {
+    padding: 1rem;
+  }
+
+  .calculator {
+    padding: 1rem;
+    border-radius: 1rem;
+    margin-bottom: 6rem;
+  }
+
+  .add-button {
+    bottom: 1.2rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .app__main {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 20rem);
+  }
+}
+
+@media (max-height: 760px) {
+  .app__header {
+    padding: 1rem 1.2rem;
+  }
+
+  .app__main {
+    padding: 1.25rem 1.25rem 5.5rem;
+    gap: 1.2rem;
+  }
+
+  .cards {
+    padding: 1rem;
+  }
+
+  .calculator {
+    padding: 1.05rem;
+  }
+}
+
+@media (max-height: 640px) {
+  .app__header {
+    padding: 0.85rem 1rem;
+  }
+
+  .app__main {
+    padding: 1rem 1rem 5rem;
+    gap: 1rem;
+  }
+
+  .calculator__display {
+    padding: 0.85rem;
+    font-size: 1.6rem;
+  }
+
+  .calculator__grid {
+    gap: 0.7rem;
+  }
+
+  .calculator__grid button {
+    font-size: 1rem;
+  }
+
+  .add-button {
+    bottom: 1rem;
+  }
+}

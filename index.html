@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カード体力電卓</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <main class="app__main">
+      <section class="cards" aria-label="カード一覧">
+        <div class="cards__empty" data-empty-state>
+          <div class="cards__placeholder"></div>
+          <p>カードがありません</p>
+        </div>
+        <ul class="cards__list" data-card-list></ul>
+      </section>
+
+      <aside class="calculator" data-calculator aria-label="電卓">
+        <div class="calculator__header">
+          <h2 data-selected-card-name>カードを選択してください</h2>
+          <p class="calculator__status" data-calculator-status></p>
+        </div>
+        <div class="calculator__display" aria-live="polite" data-display>0</div>
+        <div class="calculator__grid" data-calculator-grid>
+          <button type="button" data-value="(">(</button>
+          <button type="button" data-value=")">)</button>
+          <button type="button" data-action="undo">⌫</button>
+          <button type="button" data-action="clear">AC</button>
+
+          <button type="button" data-value="7">7</button>
+          <button type="button" data-value="8">8</button>
+          <button type="button" data-value="9">9</button>
+          <button type="button" data-operator="/">÷</button>
+
+          <button type="button" data-value="4">4</button>
+          <button type="button" data-value="5">5</button>
+          <button type="button" data-value="6">6</button>
+          <button type="button" data-operator="*">×</button>
+
+          <button type="button" data-value="1">1</button>
+          <button type="button" data-value="2">2</button>
+          <button type="button" data-value="3">3</button>
+          <button type="button" data-operator="-">−</button>
+
+          <button type="button" data-value="0">0</button>
+          <button type="button" data-value=".">.</button>
+          <button type="button" data-action="equals" class="calculator__equals">＝</button>
+          <button type="button" data-operator="+">＋</button>
+        </div>
+      </aside>
+    </main>
+
+    <button class="add-button" type="button" data-open-modal aria-label="体力カードを追加">
+      <span>＋</span>
+    </button>
+  </div>
+
+  <dialog class="card-modal" data-card-modal>
+    <form method="dialog" class="card-form" data-card-form>
+      <header>
+        <h2>カードを追加</h2>
+      </header>
+      <label>
+        カード名
+        <input type="text" name="name" placeholder="例: 戦士A">
+      </label>
+      <label>
+        最大体力
+        <input type="number" name="max" min="1" step="1" required placeholder="例: 100">
+      </label>
+      <footer>
+        <button type="button" data-close-modal>キャンセル</button>
+        <button type="submit">保存</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <template id="card-template">
+    <li class="card" data-card>
+      <button type="button" class="card__select" data-select-card>
+        <div class="card__title-row">
+          <h3 data-card-name></h3>
+          <span class="card__value" data-card-values></span>
+        </div>
+        <div class="card__progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" data-card-progress>
+          <div class="card__progress-bar" data-card-progress-bar></div>
+        </div>
+      </button>
+      <button type="button" class="card__delete" data-delete-card aria-label="カードを削除">×</button>
+    </li>
+  </template>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
