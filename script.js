@@ -53,16 +53,27 @@ function preventDoubleTapZoom() {
     return;
   }
 
-  let lastTouchEnd = 0;
+  let lastTouchTime = 0;
+  const target = refs.calculatorGrid;
+
+  if (target) {
+    target.addEventListener(
+      "touchstart",
+      (event) => {
+        const now = Date.now();
+        if (now - lastTouchTime <= 300) {
+          event.preventDefault();
+        }
+        lastTouchTime = now;
+      },
+      { passive: false }
+    );
+  }
 
   document.addEventListener(
-    "touchend",
+    "gesturestart",
     (event) => {
-      const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
-        event.preventDefault();
-      }
-      lastTouchEnd = now;
+      event.preventDefault();
     },
     { passive: false }
   );
