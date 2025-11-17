@@ -27,6 +27,7 @@ function init() {
   loadCards();
   renderCards();
   bindEvents();
+  preventDoubleTapZoom();
   refreshCalculator();
 }
 
@@ -45,6 +46,26 @@ function refreshDisplay() {
 
 function isOperator(token) {
   return token === "+" || token === "-" || token === "*" || token === "/";
+}
+
+function preventDoubleTapZoom() {
+  if (typeof window === "undefined" || !("ontouchstart" in window)) {
+    return;
+  }
+
+  let lastTouchEnd = 0;
+
+  document.addEventListener(
+    "touchend",
+    (event) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    },
+    { passive: false }
+  );
 }
 
 function loadCards() {
