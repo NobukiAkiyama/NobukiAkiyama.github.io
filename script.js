@@ -269,7 +269,7 @@ function selectCard(id) {
   const card = cards.find((item) => item.id === selectedCardId);
   if (card) {
     calculatorState.tokens = [];
-    calculatorState.currentInput = String(card.current);
+    calculatorState.currentInput = formatNumber(card.current);
   } else {
     calculatorState.tokens = [];
     calculatorState.currentInput = "0";
@@ -299,7 +299,7 @@ function renderCards() {
     nameEl.textContent = card.name;
 
     const valuesEl = clone.querySelector("[data-card-values]");
-    valuesEl.textContent = `${card.current} / ${card.max}`;
+    valuesEl.textContent = `${formatNumber(card.current)} / ${formatNumber(card.max)}`;
 
     const progressEl = clone.querySelector("[data-card-progress]");
     const barEl = clone.querySelector("[data-card-progress-bar]");
@@ -339,11 +339,11 @@ function refreshCalculator() {
 
   refs.calculator.classList.add("calculator--active");
   refs.selectedCardName.textContent = card.name;
-  refs.calculatorStatus.textContent = `体力: ${card.current} / ${card.max}`;
+  refs.calculatorStatus.textContent = `体力: ${formatNumber(card.current)} / ${formatNumber(card.max)}`;
   const editBtn = refs.calculator.querySelector('[data-edit-card]');
   if (editBtn) editBtn.disabled = false;
   if (calculatorState.tokens.length === 0 && (calculatorState.currentInput === "" || calculatorState.currentInput == null)) {
-    calculatorState.currentInput = String(card.current);
+    calculatorState.currentInput = formatNumber(card.current);
   }
   refreshDisplay();
 }
@@ -498,7 +498,7 @@ function performCalculation() {
 function resetCalculator() {
   const card = cards.find((item) => item.id === selectedCardId);
   calculatorState.tokens = [];
-  calculatorState.currentInput = card ? String(card.current) : "0";
+  calculatorState.currentInput = card ? formatNumber(card.current) : "0";
   refreshDisplay();
 }
 
@@ -590,16 +590,16 @@ function commitDisplayToCard() {
   const value = parseFloat(calculatorState.currentInput);
   if (Number.isNaN(value)) return;
 
-  const rounded = Math.round(value);
-  const clamped = Math.min(card.max, Math.max(0, rounded));
+  const clampedValue = Math.min(card.max, Math.max(0, value));
+  const normalized = Number(clampedValue.toFixed(6));
 
   cards[cardIndex] = {
     ...card,
-    current: clamped
+    current: normalized
   };
 
   calculatorState.tokens = [];
-  calculatorState.currentInput = String(clamped);
+  calculatorState.currentInput = formatNumber(normalized);
   refreshDisplay();
   saveCards();
   renderCards();
@@ -609,7 +609,7 @@ function commitDisplayToCard() {
 function refreshCalculatorStatus(cardIndex) {
   const card = cards[cardIndex];
   if (!card) return;
-  refs.calculatorStatus.textContent = `体力: ${card.current} / ${card.max}`;
+  refs.calculatorStatus.textContent = `体力: ${formatNumber(card.current)} / ${formatNumber(card.max)}`;
 }
 
 function getProgressVisual(rawPercentage) {
