@@ -19,9 +19,12 @@
 
       <aside class="calculator" data-calculator aria-label="電卓">
         <div class="calculator__header">
-          <h2 data-selected-card-name>カードを選択してください</h2>
-          <p class="calculator__status" data-calculator-status></p>
-        </div>
+            <div class="calculator__title-row">
+              <h2 data-selected-card-name>カードを選択してください</h2>
+              <button type="button" class="calculator__edit card__edit" data-edit-card aria-label="カードを編集">✎</button>
+            </div>
+            <p class="calculator__status" data-calculator-status></p>
+          </div>
         <div class="calculator__display" aria-live="polite" data-display>0</div>
         <div class="calculator__grid" data-calculator-grid>
           <button type="button" data-value="(">(</button>
@@ -91,6 +94,7 @@
       <button type="button" class="card__delete" data-delete-card aria-label="カードを削除">×</button>
     </li>
   </template>
+  
 
   <script src="script.js" defer></script>
 </body>

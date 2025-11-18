@@ -159,6 +159,39 @@ body {
   transition: background 0.2s ease;
 }
 
+.card__edit {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-right: 0.5rem;
+}
+
+.card__edit:hover,
+.card__edit:focus-visible {
+  background: rgba(82, 171, 255, 0.18);
+}
+
+.calculator__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.calculator__edit {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
 .card__delete:hover,
 .card__delete:focus-visible {
   background: rgba(255, 71, 87, 0.65);

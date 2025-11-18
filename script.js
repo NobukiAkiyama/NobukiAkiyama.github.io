@@ -54,21 +54,33 @@ function preventDoubleTapZoom() {
   }
 
   let lastTouchTime = 0;
-  const target = refs.calculatorGrid;
 
-  if (target) {
-    target.addEventListener(
-      "touchstart",
-      (event) => {
-        const now = Date.now();
-        if (now - lastTouchTime <= 300) {
-          event.preventDefault();
-        }
-        lastTouchTime = now;
-      },
-      { passive: false }
-    );
+  function isInteractive(element) {
+    if (!element) return false;
+    const tag = element.tagName && element.tagName.toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return true;
+    if (element.isContentEditable) return true;
+    if (element.closest && element.closest("[data-card-modal]")) return true;
+    return false;
   }
+
+  document.addEventListener(
+    "touchstart",
+    (event) => {
+      const target = event.target;
+      if (isInteractive(target)) {
+        lastTouchTime = Date.now();
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastTouchTime <= 300) {
+        event.preventDefault();
+      }
+      lastTouchTime = now;
+    },
+    { passive: false }
+  );
 
   document.addEventListener(
     "gesturestart",
@@ -113,6 +125,12 @@ function bindEvents() {
   refs.closeModal.addEventListener("click", () => refs.modal.close());
 
   refs.modal.addEventListener("close", () => {
+    // clear any edit state and re-enable inputs
+    const maxInput = refs.form.querySelector('input[name="max"]');
+    if (maxInput) maxInput.disabled = false;
+    delete refs.modal.dataset.editCardId;
+    const header = refs.form.querySelector('header h2');
+    if (header) header.textContent = 'カードを追加';
     refs.form.reset();
   });
 
@@ -121,6 +139,13 @@ function bindEvents() {
   refs.list.addEventListener("click", handleListClick);
 
   refs.calculatorGrid.addEventListener("click", handleCalculatorClick);
+  // calculator header edit button
+  refs.calculator.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-edit-card]");
+    if (!btn) return;
+    // open edit modal for currently selected card
+    openEditModal();
+  });
 }
 
 function handleCreateCard(event) {
@@ -138,6 +163,34 @@ function handleCreateCard(event) {
   if (!name) {
     const nextIndex = cards.length + 1;
     name = `カード_${nextIndex}`;
+  }
+
+  // If editing an existing card, update it instead of creating a new one
+  const editId = refs.modal.dataset.editCardId;
+  if (editId) {
+    const idx = cards.findIndex((c) => c.id === editId);
+    if (idx !== -1) {
+      cards[idx] = {
+        ...cards[idx],
+        name,
+        max: clampedMax,
+        // keep current health but clamp to new max
+        current: Math.min(cards[idx].current, clampedMax)
+      };
+      saveCards();
+      renderCards();
+      // If the edited card is currently selected, update calculator display
+      if (selectedCardId === editId) {
+        calculatorState.tokens = [];
+        calculatorState.currentInput = String(cards[idx].current);
+        refreshCalculator();
+      } else {
+        selectCard(editId);
+      }
+    }
+    delete refs.modal.dataset.editCardId;
+    refs.modal.close();
+    return;
   }
 
   const newCard = {
@@ -164,12 +217,39 @@ function handleListClick(event) {
     return;
   }
 
+  const editButton = event.target.closest("[data-edit-card]");
+  if (editButton) {
+    const card = editButton.closest("[data-card]");
+    if (!card) return;
+    const id = card.dataset.cardId;
+    openEditModal(id);
+    return;
+  }
+
   const selectButton = event.target.closest("[data-select-card]");
   if (selectButton) {
     const card = selectButton.closest("[data-card]");
     if (!card) return;
     selectCard(card.dataset.cardId);
   }
+}
+
+function openEditModal(id) {
+  const targetId = id || selectedCardId;
+  if (!targetId) return;
+  const card = cards.find((c) => c.id === targetId);
+  if (!card) return;
+  const nameInput = refs.form.querySelector('input[name="name"]');
+  const maxInput = refs.form.querySelector('input[name="max"]');
+  if (nameInput) nameInput.value = card.name;
+  if (maxInput) {
+    maxInput.value = card.max;
+    maxInput.disabled = false;
+  }
+  refs.modal.dataset.editCardId = targetId;
+  const header = refs.form.querySelector('header h2');
+  if (header) header.textContent = 'カードを編集';
+  refs.modal.showModal();
 }
 
 function deleteCard(id) {
@@ -252,12 +332,16 @@ function refreshCalculator() {
     calculatorState.tokens = [];
     calculatorState.currentInput = "0";
     refreshDisplay();
+    const editBtn = refs.calculator.querySelector('[data-edit-card]');
+    if (editBtn) editBtn.disabled = true;
     return;
   }
 
   refs.calculator.classList.add("calculator--active");
   refs.selectedCardName.textContent = card.name;
   refs.calculatorStatus.textContent = `体力: ${card.current} / ${card.max}`;
+  const editBtn = refs.calculator.querySelector('[data-edit-card]');
+  if (editBtn) editBtn.disabled = false;
   if (calculatorState.tokens.length === 0 && (calculatorState.currentInput === "" || calculatorState.currentInput == null)) {
     calculatorState.currentInput = String(card.current);
   }
