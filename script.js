@@ -27,8 +27,19 @@ function init() {
   loadCards();
   renderCards();
   bindEvents();
-  preventDoubleTapZoom();
+  // preventDoubleTapZoom(); ← これが遅延の原因だったので削除しました！
   refreshCalculator();
+}
+
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 
 function refreshDisplay() {
@@ -48,48 +59,7 @@ function isOperator(token) {
   return token === "+" || token === "-" || token === "*" || token === "/";
 }
 
-function preventDoubleTapZoom() {
-  if (typeof window === "undefined" || !("ontouchstart" in window)) {
-    return;
-  }
-
-  let lastTouchTime = 0;
-
-  function isInteractive(element) {
-    if (!element) return false;
-    const tag = element.tagName && element.tagName.toLowerCase();
-    if (tag === "input" || tag === "textarea" || tag === "select") return true;
-    if (element.isContentEditable) return true;
-    if (element.closest && element.closest("[data-card-modal]")) return true;
-    return false;
-  }
-
-  document.addEventListener(
-    "touchstart",
-    (event) => {
-      const target = event.target;
-      if (isInteractive(target)) {
-        lastTouchTime = Date.now();
-        return;
-      }
-
-      const now = Date.now();
-      if (now - lastTouchTime <= 300) {
-        event.preventDefault();
-      }
-      lastTouchTime = now;
-    },
-    { passive: false }
-  );
-
-  document.addEventListener(
-    "gesturestart",
-    (event) => {
-      event.preventDefault();
-    },
-    { passive: false }
-  );
-}
+// ※ preventDoubleTapZoom 関数は削除しました
 
 function loadCards() {
   try {
@@ -145,20 +115,16 @@ function bindEvents() {
     openEditModal();
   });
 
-  // 【追加機能】キーボード入力のサポート
   document.addEventListener("keydown", handleKeyboardInput);
 }
 
-// 【追加機能】キーボード操作を処理する関数
 function handleKeyboardInput(event) {
-  // 電卓がアクティブでないときは反応しない
   if (!refs.calculator.classList.contains("calculator--active")) return;
-  if (refs.modal.open) return; // モーダルが開いているときは反応しない
+  if (refs.modal.open) return;
 
   const key = event.key;
   let selector = null;
 
-  // キーに応じたボタンを探すロジック
   if (/[0-9.]/.test(key)) {
     selector = `button[data-value="${key}"]`;
   } else if (["+", "-", "*", "/"].includes(key)) {
@@ -177,7 +143,6 @@ function handleKeyboardInput(event) {
   if (selector) {
     const button = refs.calculatorGrid.querySelector(selector);
     if (button) {
-      // 視覚的なフィードバックとクリック処理
       button.focus();
       button.click();
     }
@@ -227,7 +192,7 @@ function handleCreateCard(event) {
   }
 
   const newCard = {
-    id: crypto.randomUUID(),
+    id: generateUUID(),
     name,
     max: clampedMax,
     current: clampedMax
@@ -246,7 +211,6 @@ function handleListClick(event) {
     const card = deleteButton.closest("[data-card]");
     if (!card) return;
     
-    // 【追加機能】削除前の確認アラート
     const cardName = card.querySelector("[data-card-name]").textContent;
     if (window.confirm(`「${cardName}」を削除しますか？`)) {
       const id = card.dataset.cardId;
@@ -390,9 +354,11 @@ function handleCalculatorClick(event) {
   const button = event.target.closest("button");
   if (!button || button.disabled) return;
 
-  // 【追加機能】ハプティックフィードバック（振動）
+  // 振動処理（Android用。iOSでは無視されます）
   if (typeof navigator.vibrate === "function") {
-    navigator.vibrate(10);
+    try {
+      navigator.vibrate(10);
+    } catch (e) {}
   }
 
   if (!selectedCardId) {
@@ -761,4 +727,3 @@ function formatNumber(value) {
   }
   return Number(value.toFixed(6)).toString();
 }
-
