@@ -125,7 +125,6 @@ function bindEvents() {
   refs.closeModal.addEventListener("click", () => refs.modal.close());
 
   refs.modal.addEventListener("close", () => {
-    // clear any edit state and re-enable inputs
     const maxInput = refs.form.querySelector('input[name="max"]');
     if (maxInput) maxInput.disabled = false;
     delete refs.modal.dataset.editCardId;
@@ -139,13 +138,50 @@ function bindEvents() {
   refs.list.addEventListener("click", handleListClick);
 
   refs.calculatorGrid.addEventListener("click", handleCalculatorClick);
-  // calculator header edit button
+  
   refs.calculator.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-edit-card]");
     if (!btn) return;
-    // open edit modal for currently selected card
     openEditModal();
   });
+
+  // 【追加機能】キーボード入力のサポート
+  document.addEventListener("keydown", handleKeyboardInput);
+}
+
+// 【追加機能】キーボード操作を処理する関数
+function handleKeyboardInput(event) {
+  // 電卓がアクティブでないときは反応しない
+  if (!refs.calculator.classList.contains("calculator--active")) return;
+  if (refs.modal.open) return; // モーダルが開いているときは反応しない
+
+  const key = event.key;
+  let selector = null;
+
+  // キーに応じたボタンを探すロジック
+  if (/[0-9.]/.test(key)) {
+    selector = `button[data-value="${key}"]`;
+  } else if (["+", "-", "*", "/"].includes(key)) {
+    selector = `button[data-operator="${key}"]`;
+  } else if (key === "Enter" || key === "=") {
+    selector = 'button[data-action="equals"]';
+    event.preventDefault();
+  } else if (key === "Backspace") {
+    selector = 'button[data-action="undo"]';
+  } else if (key === "Escape" || key.toLowerCase() === "c") {
+    selector = 'button[data-action="clear"]';
+  } else if (key === "(" || key === ")") {
+    selector = `button[data-value="${key}"]`;
+  }
+
+  if (selector) {
+    const button = refs.calculatorGrid.querySelector(selector);
+    if (button) {
+      // 視覚的なフィードバックとクリック処理
+      button.focus();
+      button.click();
+    }
+  }
 }
 
 function handleCreateCard(event) {
@@ -165,7 +201,6 @@ function handleCreateCard(event) {
     name = `カード_${nextIndex}`;
   }
 
-  // If editing an existing card, update it instead of creating a new one
   const editId = refs.modal.dataset.editCardId;
   if (editId) {
     const idx = cards.findIndex((c) => c.id === editId);
@@ -174,12 +209,10 @@ function handleCreateCard(event) {
         ...cards[idx],
         name,
         max: clampedMax,
-        // keep current health but clamp to new max
         current: Math.min(cards[idx].current, clampedMax)
       };
       saveCards();
       renderCards();
-      // If the edited card is currently selected, update calculator display
       if (selectedCardId === editId) {
         calculatorState.tokens = [];
         calculatorState.currentInput = String(cards[idx].current);
@@ -212,8 +245,13 @@ function handleListClick(event) {
   if (deleteButton) {
     const card = deleteButton.closest("[data-card]");
     if (!card) return;
-    const id = card.dataset.cardId;
-    deleteCard(id);
+    
+    // 【追加機能】削除前の確認アラート
+    const cardName = card.querySelector("[data-card-name]").textContent;
+    if (window.confirm(`「${cardName}」を削除しますか？`)) {
+      const id = card.dataset.cardId;
+      deleteCard(id);
+    }
     return;
   }
 
@@ -351,6 +389,11 @@ function refreshCalculator() {
 function handleCalculatorClick(event) {
   const button = event.target.closest("button");
   if (!button || button.disabled) return;
+
+  // 【追加機能】ハプティックフィードバック（振動）
+  if (typeof navigator.vibrate === "function") {
+    navigator.vibrate(10);
+  }
 
   if (!selectedCardId) {
     return;
