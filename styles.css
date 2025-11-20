@@ -9,6 +9,18 @@
   box-sizing: border-box;
 }
 
+/* --- Safari / iOS 向けの追加設定 --- */
+button, input, select, textarea {
+  /* ボタンをタップしたときの一瞬出る灰色の背景を消す */
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  /* ダブルタップによるズームを無効化し、タップの反応速度を上げる */
+  touch-action: manipulation;
+}
+/* --------------------------------- */
+
 body {
   margin: 0;
   min-height: 100vh;
