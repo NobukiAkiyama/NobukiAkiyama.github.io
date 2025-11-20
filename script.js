@@ -761,3 +761,4 @@ function formatNumber(value) {
   }
   return Number(value.toFixed(6)).toString();
 }
+
