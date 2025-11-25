@@ -1,15 +1,27 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>card life</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="app">
     <main class="app__main">
-      <section class="cards" aria-label="カード一覧">
+      <section class="cards" aria-label="カード一覧" data-cards-section>
+        <div class="cards__selection-header" data-selection-bar hidden>
+          <button type="button" class="selection-header__action" data-cancel-selection>キャンセル</button>
+          <p class="selection-header__count" data-selection-count>カードを選択</p>
+          <button type="button" class="selection-header__action" data-select-all>すべて選択</button>
+        </div>
         <div class="cards__empty" data-empty-state>
           <div class="cards__placeholder"></div>
           <p>カードがありません</p>
@@ -19,17 +31,30 @@
 
       <aside class="calculator" data-calculator aria-label="電卓">
         <div class="calculator__header">
-            <div class="calculator__title-row">
-              <h2 data-selected-card-name>カードを選択してください</h2>
-              <button type="button" class="calculator__edit card__edit" data-edit-card aria-label="カードを編集">✎</button>
-            </div>
-            <p class="calculator__status" data-calculator-status></p>
+          <div class="calculator__title-row">
+            <h2 data-selected-card-name>カードを選択してください</h2>
+            <button type="button" class="calculator__edit card__edit" data-edit-card aria-label="カードを編集">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
           </div>
+          <p class="calculator__status" data-calculator-status></p>
+        </div>
         <div class="calculator__display" aria-live="polite" data-display>0</div>
         <div class="calculator__grid" data-calculator-grid>
           <button type="button" data-value="(">(</button>
           <button type="button" data-value=")">)</button>
-          <button type="button" data-action="undo">⌫</button>
+          <button type="button" data-action="undo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+              <line x1="18" y1="9" x2="12" y2="15"></line>
+              <line x1="12" y1="9" x2="18" y2="15"></line>
+            </svg>
+          </button>
           <button type="button" data-action="clear">AC</button>
 
           <button type="button" data-value="7">7</button>
@@ -56,7 +81,22 @@
     </main>
 
     <button class="add-button" type="button" data-open-modal aria-label="体力カードを追加">
-      <span>＋</span>
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+    <button class="delete-button" type="button" data-floating-delete aria-label="選択したカードを削除" hidden>
+      <span class="delete-button__icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </span>
     </button>
   </div>
 
@@ -74,8 +114,47 @@
         <input type="number" name="max" min="1" step="1" required placeholder="例: 100">
       </label>
       <footer>
+        <button type="button" data-preset-modal-trigger style="margin-right: auto;">プリセット</button>
         <button type="button" data-close-modal>キャンセル</button>
         <button type="submit">保存</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="card-modal" data-preset-modal>
+    <form method="dialog" class="card-form" data-preset-form>
+      <header>
+        <h2>プリセット生成</h2>
+      </header>
+      <div class="preset-grid">
+        <label>
+          頭
+          <input type="number" name="head" min="1" step="1" value="100" required>
+        </label>
+        <label>
+          胴
+          <input type="number" name="torso" min="1" step="1" value="100" required>
+        </label>
+        <label>
+          右手
+          <input type="number" name="right_hand" min="1" step="1" value="100" required>
+        </label>
+        <label>
+          左手
+          <input type="number" name="left_hand" min="1" step="1" value="100" required>
+        </label>
+        <label>
+          右足
+          <input type="number" name="right_leg" min="1" step="1" value="100" required>
+        </label>
+        <label>
+          左足
+          <input type="number" name="left_leg" min="1" step="1" value="100" required>
+        </label>
+      </div>
+      <footer>
+        <button type="button" data-close-preset-modal>キャンセル</button>
+        <button type="submit">一括生成</button>
       </footer>
     </form>
   </dialog>
@@ -91,12 +170,27 @@
           <div class="card__progress-bar" data-card-progress-bar></div>
         </div>
       </button>
-      <button type="button" class="card__delete" data-delete-card aria-label="カードを削除">×</button>
+      <div class="card__action-slot">
+        <div class="card__selection-indicator" aria-hidden="true">
+          <span class="card__selection-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </span>
+        </div>
+        <button type="button" class="card__delete" data-delete-card aria-label="カードを削除">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
     </li>
   </template>
-  
 
   <script src="script.js" defer></script>
 </body>
-</html>
 
+</html>
