@@ -2,6 +2,7 @@ const storageKey = "stamina-calculator.cards";
 
 const refs = {
   list: document.querySelector("[data-card-list]"),
+  cardsSection: document.querySelector("[data-cards-section]"),
   emptyState: document.querySelector("[data-empty-state]"),
   calculator: document.querySelector("[data-calculator]"),
   calculatorGrid: document.querySelector("[data-calculator-grid]"),
@@ -11,7 +12,17 @@ const refs = {
   addButton: document.querySelector("[data-open-modal]"),
   modal: document.querySelector("[data-card-modal]"),
   form: document.querySelector("[data-card-form]"),
-  closeModal: document.querySelector("[data-close-modal]")
+  closeModal: document.querySelector("[data-close-modal]"),
+  presetModalTrigger: document.querySelector("[data-preset-modal-trigger]"),
+  presetModal: document.querySelector("[data-preset-modal]"),
+  presetForm: document.querySelector("[data-preset-form]"),
+  closePresetModal: document.querySelector("[data-close-preset-modal]"),
+  selectionBar: document.querySelector("[data-selection-bar]"),
+  selectionCount: document.querySelector("[data-selection-count]"),
+  selectAllButton: document.querySelector("[data-select-all]"),
+  cancelSelectionButton: document.querySelector("[data-cancel-selection]"),
+  deleteSelectedButton: document.querySelector("[data-floating-delete]"),
+  addButtonFloating: document.querySelector("[data-open-modal]")
 };
 
 let cards = [];
@@ -19,6 +30,14 @@ let selectedCardId = null;
 let calculatorState = {
   tokens: [],
   currentInput: "0"
+};
+
+const LONG_PRESS_DURATION = 550;
+let longPressTimeoutId = null;
+
+const selectionState = {
+  isActive: false,
+  selectedIds: new Set()
 };
 
 init();
@@ -29,13 +48,14 @@ function init() {
   bindEvents();
   // preventDoubleTapZoom(); ← これが遅延の原因だったので削除しました！
   refreshCalculator();
+  updateSelectionUi();
 }
 
 function generateUUID() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -106,16 +126,107 @@ function bindEvents() {
   refs.form.addEventListener("submit", handleCreateCard);
 
   refs.list.addEventListener("click", handleListClick);
+  refs.list.addEventListener("pointerdown", handleCardPointerDown);
+  refs.list.addEventListener("pointerup", cancelLongPressDetection);
+  refs.list.addEventListener("pointerleave", cancelLongPressDetection);
+  refs.list.addEventListener("pointercancel", cancelLongPressDetection);
 
   refs.calculatorGrid.addEventListener("click", handleCalculatorClick);
-  
+
   refs.calculator.addEventListener("click", (e) => {
+    if (selectionState.isActive) return;
     const btn = e.target.closest("[data-edit-card]");
     if (!btn) return;
     openEditModal();
   });
 
   document.addEventListener("keydown", handleKeyboardInput);
+
+  if (refs.presetModalTrigger) {
+    refs.presetModalTrigger.addEventListener("click", () => {
+      refs.modal.close();
+      refs.presetModal.showModal();
+    });
+  }
+
+  if (refs.closePresetModal) {
+    refs.closePresetModal.addEventListener("click", () => {
+      refs.presetModal.close();
+    });
+  }
+
+  if (refs.presetForm) {
+    refs.presetForm.addEventListener("submit", handlePresetSubmit);
+  }
+
+  if (refs.cancelSelectionButton) {
+    refs.cancelSelectionButton.addEventListener("click", exitSelectionMode);
+  }
+
+  if (refs.selectAllButton) {
+    refs.selectAllButton.addEventListener("click", handleSelectAllCards);
+  }
+
+  if (refs.deleteSelectedButton) {
+    refs.deleteSelectedButton.addEventListener("click", handleDeleteSelectedCards);
+  }
+}
+
+function handleCardPointerDown(event) {
+  if (selectionState.isActive) return;
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  const deleteButton = event.target.closest("[data-delete-card]");
+  if (deleteButton) return;
+  const card = event.target.closest("[data-card]");
+  if (!card) return;
+  cancelLongPressDetection();
+  longPressTimeoutId = window.setTimeout(() => {
+    if (!card.isConnected) return;
+    enterSelectionMode(card.dataset.cardId);
+  }, LONG_PRESS_DURATION);
+}
+
+function cancelLongPressDetection() {
+  if (!longPressTimeoutId) return;
+  window.clearTimeout(longPressTimeoutId);
+  longPressTimeoutId = null;
+}
+
+function handlePresetSubmit(event) {
+  event.preventDefault();
+  const formData = new FormData(refs.presetForm);
+
+  const parts = [
+    { key: 'head', name: '頭' },
+    { key: 'torso', name: '胴' },
+    { key: 'right_hand', name: '右手' },
+    { key: 'left_hand', name: '左手' },
+    { key: 'right_leg', name: '右足' },
+    { key: 'left_leg', name: '左足' }
+  ];
+
+  const newCards = parts.map(part => {
+    const max = Number(formData.get(part.key));
+    const clampedMax = Math.max(1, Math.floor(Number.isNaN(max) ? 100 : max));
+    return {
+      id: generateUUID(),
+      name: part.name,
+      max: clampedMax,
+      current: clampedMax
+    };
+  });
+
+  cards.push(...newCards);
+  saveCards();
+  renderCards();
+
+  // Select the first new card
+  if (newCards.length > 0) {
+    selectCard(newCards[0].id);
+  }
+
+  refs.presetModal.close();
+  refs.presetForm.reset();
 }
 
 function handleKeyboardInput(event) {
@@ -208,9 +319,10 @@ function handleCreateCard(event) {
 function handleListClick(event) {
   const deleteButton = event.target.closest("[data-delete-card]");
   if (deleteButton) {
+    if (selectionState.isActive) return;
     const card = deleteButton.closest("[data-card]");
     if (!card) return;
-    
+
     const cardName = card.querySelector("[data-card-name]").textContent;
     if (window.confirm(`「${cardName}」を削除しますか？`)) {
       const id = card.dataset.cardId;
@@ -221,6 +333,7 @@ function handleListClick(event) {
 
   const editButton = event.target.closest("[data-edit-card]");
   if (editButton) {
+    if (selectionState.isActive) return;
     const card = editButton.closest("[data-card]");
     if (!card) return;
     const id = card.dataset.cardId;
@@ -228,10 +341,16 @@ function handleListClick(event) {
     return;
   }
 
+  const card = event.target.closest("[data-card]");
+  if (!card) return;
+
+  if (selectionState.isActive) {
+    toggleSelectionForCard(card.dataset.cardId);
+    return;
+  }
+
   const selectButton = event.target.closest("[data-select-card]");
   if (selectButton) {
-    const card = selectButton.closest("[data-card]");
-    if (!card) return;
     selectCard(card.dataset.cardId);
   }
 }
@@ -265,6 +384,7 @@ function deleteCard(id) {
 }
 
 function selectCard(id) {
+  if (selectionState.isActive) return;
   if (selectedCardId === id) return;
   selectedCardId = id;
   renderCards();
@@ -280,48 +400,213 @@ function selectCard(id) {
 }
 
 function renderCards() {
-  refs.list.innerHTML = "";
-
+  // Handle empty state
   if (cards.length === 0) {
     refs.emptyState.hidden = false;
+    // Clear list if it has items (though cards is empty, just to be safe)
+    refs.list.innerHTML = "";
+    if (selectionState.isActive) {
+      selectionState.isActive = false;
+      selectionState.selectedIds.clear();
+      updateSelectionUi();
+    }
     return;
   }
 
   refs.emptyState.hidden = true;
 
-  const fragment = document.createDocumentFragment();
-  const template = document.getElementById("card-template");
-
-  cards.forEach((card) => {
-    const clone = template.content.cloneNode(true);
-    const li = clone.querySelector("[data-card]");
-    li.dataset.cardId = card.id;
-
-    const nameEl = clone.querySelector("[data-card-name]");
-    nameEl.textContent = card.name;
-
-    const valuesEl = clone.querySelector("[data-card-values]");
-    valuesEl.textContent = `${formatNumber(card.current)} / ${formatNumber(card.max)}`;
-
-    const progressEl = clone.querySelector("[data-card-progress]");
-    const barEl = clone.querySelector("[data-card-progress-bar]");
-    const percentage = Math.round((card.current / card.max) * 100);
-    progressEl.setAttribute("aria-valuenow", String(percentage));
-    progressEl.setAttribute("aria-valuetext", `残り ${percentage}%`);
-    const { gradient, accent, glow } = getProgressVisual(percentage);
-    barEl.style.width = `${percentage}%`;
-    barEl.style.background = gradient;
-    li.style.setProperty("--card-accent", accent);
-    li.style.setProperty("--card-glow", glow);
-
-    if (card.id === selectedCardId) {
-      li.classList.add("card--active");
+  // 1. Create a map of existing elements by card ID
+  const existingElements = new Map();
+  Array.from(refs.list.children).forEach((el) => {
+    if (el.dataset.cardId) {
+      existingElements.set(el.dataset.cardId, el);
     }
-
-    fragment.appendChild(clone);
   });
 
-  refs.list.appendChild(fragment);
+  // 2. Iterate through cards and update or create elements
+  const template = document.getElementById("card-template");
+
+  // Keep track of IDs processed to know which ones to remove later
+  const processedIds = new Set();
+
+  cards.forEach((card, index) => {
+    processedIds.add(card.id);
+    let li = existingElements.get(card.id);
+    const isNew = !li;
+
+    if (isNew) {
+      const clone = template.content.cloneNode(true);
+      li = clone.querySelector("[data-card]");
+      li.dataset.cardId = card.id;
+      // Add animation class for new items
+      li.style.animationDelay = `${index * 0.05}s`;
+      li.classList.add("card--enter");
+    }
+
+    // Update content
+    const nameEl = li.querySelector("[data-card-name]");
+    if (nameEl.textContent !== card.name) {
+      nameEl.textContent = card.name;
+    }
+
+    const valuesEl = li.querySelector("[data-card-values]");
+    const valuesText = `${formatNumber(card.current)} / ${formatNumber(card.max)}`;
+    if (valuesEl.textContent !== valuesText) {
+      valuesEl.textContent = valuesText;
+    }
+
+    const progressEl = li.querySelector("[data-card-progress]");
+    const barEl = li.querySelector("[data-card-progress-bar]");
+    const percentage = Math.round((card.current / card.max) * 100);
+
+    if (progressEl.getAttribute("aria-valuenow") !== String(percentage)) {
+      progressEl.setAttribute("aria-valuenow", String(percentage));
+      progressEl.setAttribute("aria-valuetext", `残り ${percentage}%`);
+      const { gradient, accent, glow } = getProgressVisual(percentage);
+      barEl.style.width = `${percentage}%`;
+      barEl.style.background = gradient;
+      li.style.setProperty("--card-accent", accent);
+      li.style.setProperty("--card-glow", glow);
+    }
+
+    // Update active state
+    if (card.id === selectedCardId) {
+      li.classList.add("card--active");
+    } else {
+      li.classList.remove("card--active");
+    }
+
+    // Update selection state
+    if (selectionState.isActive) {
+      li.classList.add("card--selection-mode");
+      if (selectionState.selectedIds.has(card.id)) {
+        li.classList.add("card--selection-checked");
+      } else {
+        li.classList.remove("card--selection-checked");
+      }
+    } else {
+      li.classList.remove("card--selection-mode", "card--selection-checked");
+    }
+
+    // Append if new, or ensure order if existing
+    if (isNew) {
+      refs.list.appendChild(li);
+    } else {
+      // Check if it's in the right position
+      const currentChild = refs.list.children[index];
+      if (currentChild !== li) {
+        // If the element at this index is not the one we expect, move it here
+        if (currentChild) {
+          refs.list.insertBefore(li, currentChild);
+        } else {
+          refs.list.appendChild(li);
+        }
+      }
+    }
+  });
+
+  // 3. Remove elements that are no longer in the cards array
+  existingElements.forEach((el, id) => {
+    if (!processedIds.has(id)) {
+      // Optional: Add exit animation here
+      el.remove();
+    }
+  });
+}
+
+function enterSelectionMode(initialId) {
+  if (cards.length === 0) return;
+  selectionState.isActive = true;
+  if (!selectionState.selectedIds) {
+    selectionState.selectedIds = new Set();
+  }
+  if (selectedCardId != null) {
+    selectedCardId = null;
+    refreshCalculator();
+  } else {
+    refreshCalculator();
+  }
+  if (initialId) {
+    selectionState.selectedIds.add(initialId);
+  }
+  updateSelectionUi();
+  renderCards();
+}
+
+function exitSelectionMode() {
+  if (!selectionState.isActive) return;
+  selectionState.isActive = false;
+  selectionState.selectedIds.clear();
+  updateSelectionUi();
+  renderCards();
+}
+
+function toggleSelectionForCard(cardId) {
+  if (!selectionState.isActive || !cardId) return;
+  if (selectionState.selectedIds.has(cardId)) {
+    selectionState.selectedIds.delete(cardId);
+  } else {
+    selectionState.selectedIds.add(cardId);
+  }
+  updateSelectionUi();
+  renderCards();
+}
+
+function handleSelectAllCards() {
+  if (!selectionState.isActive) return;
+  if (selectionState.selectedIds.size === cards.length) {
+    selectionState.selectedIds.clear();
+  } else {
+    cards.forEach((card) => selectionState.selectedIds.add(card.id));
+  }
+  updateSelectionUi();
+  renderCards();
+}
+
+function handleDeleteSelectedCards() {
+  if (!selectionState.isActive || selectionState.selectedIds.size === 0) return;
+  const count = selectionState.selectedIds.size;
+  const confirmation = window.confirm(`${count} 件のカードを削除しますか？`);
+  if (!confirmation) return;
+
+  const selectedIds = new Set(selectionState.selectedIds);
+  cards = cards.filter((card) => !selectedIds.has(card.id));
+  if (!cards.some((card) => card.id === selectedCardId)) {
+    selectedCardId = null;
+  }
+  selectionState.selectedIds.clear();
+  selectionState.isActive = false;
+  saveCards();
+  renderCards();
+  refreshCalculator();
+  updateSelectionUi();
+}
+
+function updateSelectionUi() {
+  const count = selectionState.selectedIds.size;
+  if (refs.selectionBar) {
+    refs.selectionBar.hidden = !selectionState.isActive;
+  }
+  if (refs.cardsSection) {
+    refs.cardsSection.classList.toggle("cards--selection", selectionState.isActive);
+  }
+  if (refs.selectionCount) {
+    refs.selectionCount.textContent = count > 0 ? `${count} 件を選択` : "カードを選択";
+  }
+  if (refs.deleteSelectedButton) {
+    refs.deleteSelectedButton.hidden = !selectionState.isActive;
+    refs.deleteSelectedButton.disabled = count === 0;
+  }
+  if (refs.selectAllButton) {
+    const isAllSelected = count === cards.length && cards.length > 0;
+    refs.selectAllButton.textContent = isAllSelected ? "すべて解除" : "すべて選択";
+  }
+  if (refs.addButtonFloating) {
+    refs.addButtonFloating.classList.toggle("add-button--hidden", selectionState.isActive);
+  }
+  if (refs.calculator) {
+    refs.calculator.classList.toggle("calculator--locked", selectionState.isActive);
+  }
 }
 
 function refreshCalculator() {
@@ -353,12 +638,13 @@ function refreshCalculator() {
 function handleCalculatorClick(event) {
   const button = event.target.closest("button");
   if (!button || button.disabled) return;
+  if (selectionState.isActive) return;
 
   // 振動処理（Android用。iOSでは無視されます）
   if (typeof navigator.vibrate === "function") {
     try {
       navigator.vibrate(10);
-    } catch (e) {}
+    } catch (e) { }
   }
 
   if (!selectedCardId) {
