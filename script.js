@@ -63,7 +63,9 @@ function generateUUID() {
 }
 
 function refreshDisplay() {
-  const tokenText = calculatorState.tokens.join(" ");
+  const tokenText = calculatorState.tokens
+    .map((t) => (t === "*" ? "×" : t))
+    .join(" ");
   let text = "";
 
   if (calculatorState.currentInput !== "" && calculatorState.currentInput != null) {
