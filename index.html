@@ -100,7 +100,7 @@
     </button>
   </div>
 
-  <dialog class="card-modal" data-card-modal>
+  <dialog class="card-modal" data-card-modal tabindex="-1">
     <form method="dialog" class="card-form" data-card-form>
       <header>
         <h2>カードを追加</h2>
@@ -111,7 +111,7 @@
       </label>
       <label>
         最大体力
-        <input type="number" name="max" min="1" step="1" required placeholder="例: 100">
+        <input type="number" name="max" min="1" step="1" placeholder="例: 10000">
       </label>
       <footer>
         <button type="button" data-preset-modal-trigger style="margin-right: auto;">プリセット</button>
@@ -121,7 +121,7 @@
     </form>
   </dialog>
 
-  <dialog class="card-modal" data-preset-modal>
+  <dialog class="card-modal" data-preset-modal tabindex="-1">
     <form method="dialog" class="card-form" data-preset-form>
       <header>
         <h2>プリセット生成</h2>
@@ -129,27 +129,27 @@
       <div class="preset-grid">
         <label>
           頭
-          <input type="number" name="head" min="1" step="1" value="100" required>
+          <input type="number" name="head" min="1" step="1" value="10000" required>
         </label>
         <label>
           胴
-          <input type="number" name="torso" min="1" step="1" value="100" required>
+          <input type="number" name="torso" min="1" step="1" value="10000" required>
         </label>
         <label>
           右手
-          <input type="number" name="right_hand" min="1" step="1" value="100" required>
+          <input type="number" name="right_hand" min="1" step="1" value="10000" required>
         </label>
         <label>
           左手
-          <input type="number" name="left_hand" min="1" step="1" value="100" required>
+          <input type="number" name="left_hand" min="1" step="1" value="10000" required>
         </label>
         <label>
           右足
-          <input type="number" name="right_leg" min="1" step="1" value="100" required>
+          <input type="number" name="right_leg" min="1" step="1" value="10000" required>
         </label>
         <label>
           左足
-          <input type="number" name="left_leg" min="1" step="1" value="100" required>
+          <input type="number" name="left_leg" min="1" step="1" value="10000" required>
         </label>
       </div>
       <footer>

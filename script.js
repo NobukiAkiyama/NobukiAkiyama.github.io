@@ -110,6 +110,11 @@ function bindEvents() {
   refs.addButton.addEventListener("click", () => {
     refs.form.reset();
     refs.modal.showModal();
+    try {
+      refs.modal.focus();
+    } catch (e) {
+      // ignore if focus() not supported
+    }
   });
 
   refs.closeModal.addEventListener("click", () => refs.modal.close());
@@ -146,6 +151,11 @@ function bindEvents() {
     refs.presetModalTrigger.addEventListener("click", () => {
       refs.modal.close();
       refs.presetModal.showModal();
+      try {
+        refs.presetModal.focus();
+      } catch (e) {
+        // ignore if focus() not supported
+      }
     });
   }
 
@@ -206,8 +216,9 @@ function handlePresetSubmit(event) {
   ];
 
   const newCards = parts.map(part => {
-    const max = Number(formData.get(part.key));
-    const clampedMax = Math.max(1, Math.floor(Number.isNaN(max) ? 100 : max));
+    const raw = formData.get(part.key);
+    const parsed = raw === null || String(raw).trim() === "" ? 10000 : Number(raw);
+    const clampedMax = Math.max(1, Math.floor(Number.isNaN(parsed) ? 10000 : parsed));
     return {
       id: generateUUID(),
       name: part.name,
@@ -264,10 +275,16 @@ function handleCreateCard(event) {
   event.preventDefault();
   const formData = new FormData(refs.form);
   let name = (formData.get("name") || "").toString().trim();
-  const max = Number(formData.get("max"));
-
-  if (Number.isNaN(max)) {
-    return;
+  const maxRaw = formData.get("max");
+  let max;
+  if (maxRaw === null || String(maxRaw).trim() === "") {
+    // If user didn't input a value, default to 10000 as requested
+    max = 10000;
+  } else {
+    max = Number(maxRaw);
+    if (Number.isNaN(max)) {
+      max = 10000;
+    }
   }
 
   const clampedMax = Math.max(1, Math.floor(max));
@@ -371,6 +388,11 @@ function openEditModal(id) {
   const header = refs.form.querySelector('header h2');
   if (header) header.textContent = 'カードを編集';
   refs.modal.showModal();
+  try {
+    refs.modal.focus();
+  } catch (e) {
+    // ignore
+  }
 }
 
 function deleteCard(id) {

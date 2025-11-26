@@ -263,6 +263,15 @@ body {
     position: relative;
 }
 
+/* Prevent text selection and native touch selection handles on long-press */
+.card,
+.card * {
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
 .card:hover {
     background: rgba(255, 255, 255, 0.08);
     transform: scale(1.01);
