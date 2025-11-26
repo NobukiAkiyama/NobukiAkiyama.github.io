@@ -75,6 +75,11 @@ function refreshDisplay() {
   }
 
   refs.display.textContent = text.trim() || "0";
+  
+  // Auto-scroll to the right end of the display to show the latest input
+  requestAnimationFrame(() => {
+    refs.display.scrollLeft = refs.display.scrollWidth;
+  });
 }
 
 function isOperator(token) {
