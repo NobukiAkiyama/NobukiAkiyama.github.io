@@ -508,6 +508,14 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Allow horizontal scrolling when the numeric input grows beyond the display width */
+.calculator__display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+}
+
 .calculator__grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
