@@ -43,7 +43,10 @@
           </div>
           <p class="calculator__status" data-calculator-status></p>
         </div>
-        <div class="calculator__display" aria-live="polite" data-display>0</div>
+        <div class="calculator__display" aria-live="polite">
+          <button type="button" class="calculator__history" data-history hidden aria-label="直前の計算に戻る"></button>
+          <div class="calculator__display-text" data-display>0</div>
+        </div>
         <div class="calculator__grid" data-calculator-grid>
           <button type="button" data-value="(">(</button>
           <button type="button" data-value=")">)</button>
