@@ -7,6 +7,7 @@ const refs = {
   calculator: document.querySelector("[data-calculator]"),
   calculatorGrid: document.querySelector("[data-calculator-grid]"),
   display: document.querySelector("[data-display]"),
+  historyDisplay: document.querySelector("[data-history]"),
   selectedCardName: document.querySelector("[data-selected-card-name]"),
   calculatorStatus: document.querySelector("[data-calculator-status]"),
   addButton: document.querySelector("[data-open-modal]"),
@@ -31,6 +32,7 @@ let calculatorState = {
   tokens: [],
   currentInput: "0"
 };
+let lastCalculationSnapshot = null;
 
 const LONG_PRESS_DURATION = 550;
 let longPressTimeoutId = null;
@@ -75,11 +77,40 @@ function refreshDisplay() {
   }
 
   refs.display.textContent = text.trim() || "0";
+  updateHistoryDisplay();
   
   // Auto-scroll to the right end of the display to show the latest input
   requestAnimationFrame(() => {
     refs.display.scrollLeft = refs.display.scrollWidth;
   });
+}
+
+function setHistorySnapshot(tokens) {
+  const card = cards.find((item) => item.id === selectedCardId);
+  const expression = formatHistoryExpression(tokens);
+  lastCalculationSnapshot = {
+    expression,
+    tokens: [...tokens],
+    cardValue: card ? card.current : null,
+    cardId: selectedCardId
+  };
+  updateHistoryDisplay();
+}
+
+function updateHistoryDisplay() {
+  if (!refs.historyDisplay) return;
+  if (!lastCalculationSnapshot || !lastCalculationSnapshot.expression) {
+    refs.historyDisplay.hidden = true;
+    refs.historyDisplay.textContent = "";
+    return;
+  }
+  refs.historyDisplay.hidden = false;
+  refs.historyDisplay.textContent = lastCalculationSnapshot.expression;
+}
+
+function clearHistorySnapshot() {
+  lastCalculationSnapshot = null;
+  updateHistoryDisplay();
 }
 
 function isOperator(token) {
@@ -144,6 +175,9 @@ function bindEvents() {
   refs.list.addEventListener("pointercancel", cancelLongPressDetection);
 
   refs.calculatorGrid.addEventListener("click", handleCalculatorClick);
+  if (refs.historyDisplay) {
+    refs.historyDisplay.addEventListener("click", handleHistoryClick);
+  }
 
   refs.calculator.addEventListener("click", (e) => {
     if (selectionState.isActive) return;
@@ -415,6 +449,7 @@ function deleteCard(id) {
 function selectCard(id) {
   if (selectionState.isActive) return;
   if (selectedCardId === id) return;
+  clearHistorySnapshot();
   selectedCardId = id;
   renderCards();
   const card = cards.find((item) => item.id === selectedCardId);
@@ -546,6 +581,7 @@ function renderCards() {
 function enterSelectionMode(initialId) {
   if (cards.length === 0) return;
   selectionState.isActive = true;
+  clearHistorySnapshot();
   if (!selectionState.selectedIds) {
     selectionState.selectedIds = new Set();
   }
@@ -645,6 +681,7 @@ function refreshCalculator() {
     refs.calculator.classList.remove("calculator--active");
     refs.selectedCardName.textContent = "カードを選択してください";
     refs.calculatorStatus.textContent = "";
+    clearHistorySnapshot();
     calculatorState.tokens = [];
     calculatorState.currentInput = "0";
     refreshDisplay();
@@ -793,6 +830,7 @@ function performCalculation() {
   }
 
   if (tokens.length === 0) {
+    clearHistorySnapshot();
     commitDisplayToCard();
     return;
   }
@@ -801,8 +839,12 @@ function performCalculation() {
     tokens.pop();
   }
 
-  if (tokens.length === 0) return;
+  if (tokens.length === 0) {
+    clearHistorySnapshot();
+    return;
+  }
 
+  setHistorySnapshot(tokens);
   const expression = tokens.join(" ");
 
   try {
@@ -823,13 +865,14 @@ function resetCalculator() {
   const card = cards.find((item) => item.id === selectedCardId);
   calculatorState.tokens = [];
   calculatorState.currentInput = card ? formatNumber(card.current) : "0";
+  clearHistorySnapshot();
   refreshDisplay();
 }
 
 function removeLast() {
   if (calculatorState.currentInput && calculatorState.currentInput !== "") {
     if (calculatorState.currentInput.length <= 1) {
-      calculatorState.currentInput = "0";
+      calculatorState.currentInput = "";
     } else {
       calculatorState.currentInput = calculatorState.currentInput.slice(0, -1);
     }
@@ -1041,4 +1084,44 @@ function formatNumber(value) {
     return String(value);
   }
   return Number(value.toFixed(6)).toString();
+}
+
+function formatHistoryExpression(tokens) {
+  return tokens
+    .map((token) => {
+      if (token === "*") return "×";
+      if (token === "/") return "÷";
+      return token;
+    })
+    .join(" ");
+}
+
+function handleHistoryClick() {
+  if (selectionState.isActive) return;
+  if (!lastCalculationSnapshot) return;
+
+  const { tokens, cardValue, cardId } = lastCalculationSnapshot;
+
+  if (cardId && cardId !== selectedCardId) {
+    selectCard(cardId);
+  }
+
+  calculatorState.tokens = [...tokens];
+  calculatorState.currentInput = "";
+
+  if (cardId && cardId === selectedCardId && cardValue != null) {
+    const idx = cards.findIndex((card) => card.id === cardId);
+    if (idx !== -1) {
+      cards[idx] = {
+        ...cards[idx],
+        current: cardValue
+      };
+      saveCards();
+      renderCards();
+      refreshCalculatorStatus(idx);
+    }
+  }
+
+  clearHistorySnapshot();
+  refreshDisplay();
 }
